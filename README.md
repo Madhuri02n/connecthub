@@ -2,8 +2,11 @@
 
 A full-stack social media web application built on the MERN stack — share photo posts, follow people, like and comment in real time, and get notified instantly when someone engages with your content.
 
-**Live demo:** _add your Vercel URL here after deploying_
-**API base:** _add your Render URL here after deploying_
+**Live app:** https://connecthub-drab.vercel.app
+**API base:** https://connecthub-vroy.onrender.com/api
+**Repository:** https://github.com/Madhuri02n/connecthub
+
+> Note: the backend runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request after idle time can take 30–50 seconds to wake it back up — that's expected, not a bug.
 
 ---
 
@@ -29,7 +32,7 @@ A full-stack social media web application built on the MERN stack — share phot
 
 ConnectHub is a production-shaped social media platform: users register, build a profile, post photos with captions and hashtags, follow other users, and interact through likes, comments, bookmarks, and shares. Notifications arrive in real time over Socket.IO, and an admin dashboard gives moderators visibility into users, posts, and platform-wide stats.
 
-The project follows an MVC architecture on the backend and a component/context-driven architecture on the frontend, with a consistent "darkroom / contact sheet" visual identity across the UI.
+The project follows an MVC architecture on the backend and a component/context-driven architecture on the frontend, with a consistent "darkroom / contact sheet" visual identity across the UI — warm charcoal surfaces, an amber safelight accent, and monospace metadata styling that nods to film-frame numbering.
 
 ---
 
@@ -120,6 +123,7 @@ connecthub/
 │   │   ├── utils/            # timeAgo, etc.
 │   │   ├── App.jsx
 │   │   └── main.jsx
+│   ├── .eslintrc.json
 │   ├── vercel.json
 │   └── package.json
 ├── server/
@@ -159,7 +163,7 @@ connecthub/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/<your-username>/connecthub.git
+git clone https://github.com/Madhuri02n/connecthub.git
 cd connecthub
 
 cd server && npm install
@@ -218,7 +222,7 @@ The client runs at `http://localhost:5173`, the API at `http://localhost:5000`.
 
 ## API Documentation
 
-Base URL: `/api`
+Base URL: `/api` (production: `https://connecthub-vroy.onrender.com/api`)
 
 ### Auth (`/api/auth`)
 | Method | Endpoint | Access | Description |
@@ -286,37 +290,39 @@ Base URL: `/api`
 Defined in `.github/workflows/ci-cd.yml`, triggered on every push/PR to `main`:
 
 1. **`backend-checks`** — installs backend deps, syntax-checks every `.js` file, runs the test script.
-2. **`frontend-build`** — installs frontend deps, lints, builds the production bundle, uploads it as a workflow artifact.
-3. **`deploy`** (only on a push to `main`, only after both jobs above pass) — deploys the frontend to Vercel via the Vercel CLI action, then pings a Render deploy hook to redeploy the backend.
+2. **`frontend-build`** — installs frontend deps, lints (via a dedicated `.eslintrc.json`), builds the production bundle, uploads it as a workflow artifact.
+3. **`deploy`** (only on a push to `main`, only after both jobs above pass) — installs the latest Vercel CLI and deploys the frontend directly with `vercel --prod --cwd client`, then pings a Render deploy hook to redeploy the backend.
 
 **Required GitHub Actions secrets** (Settings → Secrets and variables → Actions):
 
 | Secret | Where to get it |
 |---|---|
 | `VERCEL_TOKEN` | Vercel → Account Settings → Tokens |
-| `VERCEL_ORG_ID` | `client/.vercel/project.json` after running `vercel link` once locally |
-| `VERCEL_PROJECT_ID` | Same file as above |
-| `VITE_API_URL` | Your deployed Render backend URL + `/api` |
-| `RENDER_DEPLOY_HOOK_URL` | Render dashboard → your service → Settings → Deploy Hook |
+| `VERCEL_ORG_ID` | Vercel API (`GET /v2/teams`) or team settings — the `team_...` ID |
+| `VERCEL_PROJECT_ID` | Vercel project → Settings → General → Project ID |
+| `VITE_API_URL` | The deployed Render backend URL + `/api` |
+| `RENDER_DEPLOY_HOOK_URL` | Render dashboard → service → Settings → Deploy Hook |
+
+**Note on Vercel project settings:** the deploy step passes `--cwd client` explicitly to the Vercel CLI, so the Vercel project's own **Root Directory** setting (Settings → General) should be left **blank** — setting both leads to the CLI looking for a nonexistent `client/client` path.
 
 ---
 
 ## Deployment
 
 ### Frontend → Vercel
-1. Import the repo in the Vercel dashboard, set the root directory to `client`.
-2. Vercel auto-detects the Vite framework and `vercel.json`'s SPA rewrite.
-3. Add `VITE_API_URL` as a Vercel project environment variable.
-4. Run `vercel link` locally once to generate `.vercel/project.json`, and copy the org/project IDs into your GitHub secrets for the CI/CD pipeline above.
+1. Import the repo in the Vercel dashboard.
+2. Leave **Root Directory** blank at the project-settings level (the CI/CD pipeline passes `--cwd client` explicitly instead — see note above). If deploying manually via the dashboard without the pipeline, set Root Directory to `client` instead.
+3. Vercel auto-detects the Vite framework and `client/vercel.json`'s SPA rewrite.
+4. Add `VITE_API_URL` as a Vercel project environment variable, pointing at your Render backend + `/api`.
 
 ### Backend → Render
 1. Either connect the repo and let Render read `render.yaml` (Blueprint deploy), or create a Web Service manually with root directory `server`, build command `npm install`, start command `npm start`.
-2. Fill in the secret environment variables Render prompts for (`MONGO_URI`, `CLIENT_URL`, Cloudinary credentials).
+2. Fill in the secret environment variables Render prompts for (`MONGO_URI`, `CLIENT_URL`, Cloudinary credentials). `CLIENT_URL` must exactly match your live Vercel domain (including `https://`, no trailing slash) or CORS will block every request.
 3. Copy the service's Deploy Hook URL into the `RENDER_DEPLOY_HOOK_URL` GitHub secret.
 
 ### Database → MongoDB Atlas
 1. Create a free M0 cluster, add a database user, and allow network access from anywhere (`0.0.0.0/0`) or Render's specific IPs.
-2. Copy the connection string into `MONGO_URI`.
+2. Copy the connection string into `MONGO_URI`, with a dedicated database name (e.g. `/connecthub`) — a single cluster can safely host multiple unrelated projects' databases side by side.
 
 ---
 
@@ -329,7 +335,7 @@ Defined in `.github/workflows/ci-cd.yml`, triggered on every push/PR to `main`:
 - `express-mongo-sanitize` strips NoSQL-injection operators from input
 - `express-validator` on every write endpoint
 - CORS scoped to the deployed frontend origin only
-- Environment variables for all secrets; nothing sensitive is committed
+- Environment variables for all secrets; nothing sensitive is committed (verify with `git check-ignore -v server/.env` before any push)
 
 **Known trade-off:** `xss-clean` is an unmaintained package. It's included for defense-in-depth, but don't rely on it alone — always escape/encode user content on render.
 
@@ -342,6 +348,8 @@ Defined in `.github/workflows/ci-cd.yml`, triggered on every push/PR to `main`:
 - Chat has a working real-time transport (Socket.IO) but no dedicated UI yet — the event contract (`chat:message`) is ready to build against.
 - Admin post moderation isn't yet exposed as a UI action outside the post owner's own controls.
 - AI-generated captions (bonus feature) were not implemented in this pass.
+- `ProfilePage`'s "posts by this user" grid currently filters the general feed client-side rather than using the dedicated `?author=` query param the backend now supports — worth switching over for better performance at scale.
+- Render's free tier cold-starts after 15 minutes of inactivity; a paid tier or a periodic health-check ping would eliminate the wake-up delay.
 
 ---
 
