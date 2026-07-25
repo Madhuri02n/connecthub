@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-paper-100 text-ink-900 font-sans antialiased transition-colors duration-200;
+  }
+
+  html.dark body {
+    @apply bg-ink-950 text-paper-200;
+  }
+
+  /* Visible keyboard focus everywhere — accessibility floor */
+  :focus-visible {
+    @apply outline-none ring-2 ring-safelight-500 ring-offset-2 ring-offset-paper-100;
+  }
+  html.dark :focus-visible {
+    @apply ring-offset-ink-950;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Signature element: the sprocket rule along the top edge of a post card,
+     evoking a contact-sheet frame. */
+  .contact-frame {
+    @apply relative rounded-card border border-ink-700/10 dark:border-paper-300/10 bg-white dark:bg-ink-900 shadow-sprocket overflow-hidden;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-safelight-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-safelight-400 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-ink-700/20 dark:border-paper-300/20 px-4 py-2 text-sm font-semibold text-ink-800 dark:text-paper-200 transition hover:bg-ink-900/5 dark:hover:bg-paper-100/5 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-ink-700/20 dark:border-paper-300/20 bg-white dark:bg-ink-900 px-3 py-2 text-sm text-ink-900 dark:text-paper-200 placeholder:text-ink-600/50 focus:border-safelight-500;
+  }
+
+  .label-mono {
+    @apply font-mono text-xs uppercase tracking-wider text-ink-600 dark:text-paper-300/60;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-md bg-ink-700/10 dark:bg-paper-300/10;
+  }
+}
