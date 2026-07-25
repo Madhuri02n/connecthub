@@ -6,7 +6,7 @@ export const AuthLayout = () => (
       <Link to="/login" className="mb-8 block text-center font-display text-3xl font-semibold text-paper-100">
         Connect<span className="text-safelight-500">Hub</span>
       </Link>
-      <div className="contact-frame p-6">
+<div className="rounded-card border border-paper-300/10 bg-ink-900 p-6 shadow-sprocket overflow-hidden">
         <Outlet />
       </div>
     </div>
