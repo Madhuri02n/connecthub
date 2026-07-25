@@ -26,3 +26,6 @@ Thumbs.db
 # Uploads (local dev only - production uses Cloudinary)
 server/uploads/*
 !server/uploads/.gitkeep
+
+.vercel
+.env*
