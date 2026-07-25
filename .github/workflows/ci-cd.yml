@@ -6,15 +6,11 @@ on:
   pull_request:
     branches: [main]
 
-# Avoid overlapping runs on rapid pushes to the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # -----------------------------------------------------------------------
-  # Backend: install deps, syntax-check every file, run tests if present.
-  # -----------------------------------------------------------------------
   backend-checks:
     name: Backend checks
     runs-on: ubuntu-latest
@@ -44,10 +40,6 @@ jobs:
       - name: Run backend test suite
         run: npm test
 
-  # -----------------------------------------------------------------------
-  # Frontend: install deps, lint, and build. A failed build fails the job,
-  # which blocks the deploy job below via `needs`.
-  # -----------------------------------------------------------------------
   frontend-build:
     name: Frontend build
     runs-on: ubuntu-latest
@@ -83,11 +75,6 @@ jobs:
           path: client/dist
           retention-days: 7
 
-  # -----------------------------------------------------------------------
-  # Deploy: only on a successful push to main, and only after both checks
-  # above pass. Deploys the frontend to Vercel and pings Render's deploy
-  # hook to redeploy the backend.
-  # -----------------------------------------------------------------------
   deploy:
     name: Deploy
     needs: [backend-checks, frontend-build]
@@ -107,5 +94,6 @@ jobs:
           vercel-args: '--prod'
 
       - name: Trigger Render backend deploy
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
-        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        env:
+          RENDER_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "$RENDER_HOOK"
